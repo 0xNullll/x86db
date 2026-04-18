@@ -1,6 +1,6 @@
 import json
 import sqlite3
-
+import os
 
 # =========================
 # Backend: JSON
@@ -112,6 +112,7 @@ def dump_instruction_sql(conn, mnemonic):
             "mnemonic": ins["mnemonic"],
             "opcode": ins["opcode"],
             "description": ins["description"],
+            "description_notes": ins["description_notes"],
             "mode64": ins["mode64"],
             "compat": ins["compat"],
             "extension": ins["extension"],
@@ -143,12 +144,13 @@ def print_instructions(instructions, mnemonic):
 
         print(f"Opcode      : {ins['opcode']}")
         print(f"Description : {ins['description']}")
+        print(f"Notes       : {ins['description_notes']}")
         print(f"Mode        : 64bit={ins['mode64']} | Compat={ins['compat']}")
         print(f"Extension   : {ins['extension']}")
         print(f"Category    : {ins['category']}")
 
         ops = ins.get("operands")
-        print(f"Operands    : {', '.join(ops) if ops else 'None'}")
+        print(f"Operands    : [{', '.join(ops) if ops else 'None'}]")
 
         print("\nFlags (Detailed):")
         if ins.get("flags"):
@@ -199,14 +201,19 @@ def print_instructions(instructions, mnemonic):
 # =========================
 # Main
 # =========================
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+JSON_PATH = os.path.join(BASE_DIR, "..", "data", "isa_x86.json")
+DB_PATH   = os.path.join(BASE_DIR, "..", "data", "isa_x86.db")
+
 def main():
     mode = input("Select mode (json/sql): ").strip().lower()
 
     if mode == "json":
-        with open("../data/isa_x86.json", "r", encoding="utf-8") as f:
+        with open(JSON_PATH, "r", encoding="utf-8") as f:
             backend = json.load(f)
     elif mode == "sql":
-        backend = sqlite3.connect("../data/isa_x86.db")
+        backend = sqlite3.connect(DB_PATH)
+
     else:
         print("Invalid mode.")
         return

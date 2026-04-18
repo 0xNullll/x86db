@@ -1,6 +1,7 @@
 import json
 import sqlite3
 from collections import Counter
+import os
 
 # =========================
 # LOADERS
@@ -108,6 +109,26 @@ def compute_stats(instructions):
             elif status:
                 flags_counter[flag] += 1
 
+    flag_status_counter = Counter()
+    fpu_flag_status_counter = Counter()
+
+    STATUS_MAP = {
+        3: "modified",
+        2: "tested",
+        1: "undefined",
+        0: "not_affected"
+    }
+
+    for ins in instructions:
+        for flag, status in (ins.get('flags') or {}).items():
+
+            status_name = STATUS_MAP.get(status, str(status))
+
+            if flag in ('C0', 'C1', 'C2', 'C3'):
+                fpu_flag_status_counter[(flag, status_name)] += 1
+            else:
+                flag_status_counter[(flag, status_name)] += 1
+
     # ================= PRINT =================
 
     print("\n" + "=" * 80)
@@ -156,9 +177,19 @@ def compute_stats(instructions):
     for k, v in flags_counter.most_common():
         print(f"  {k:5}: {v}")
 
+    print("\nFLAGS behavior:")
+
+    for (flag, status), count in sorted(flag_status_counter.items()):
+        print(f"  {flag:5} {status:12}: {count}")
+
     print("\nFPU FLAGS usage:")
     for k, v in fpu_flags_counter.most_common():
         print(f"  {k:3}: {v}")
+
+    print("\nFPU FLAGS behavior:")
+
+    for (flag, status), count in sorted(fpu_flag_status_counter.items()):
+        print(f"  {flag:3} {status:12}: {count}")
 
     print("=" * 80 + "\n")
 
@@ -166,15 +197,20 @@ def compute_stats(instructions):
 # =========================
 # MAIN
 # =========================
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+JSON_PATH = os.path.join(BASE_DIR, "..", "data", "isa_x86.json")
+DB_PATH   = os.path.join(BASE_DIR, "..", "data", "isa_x86.db")
+
 def main():
     mode = input("Mode (json/sql): ").strip().lower()
 
     if mode == "json":
-        instructions = load_json("../data/isa_x86.json")
+        instructions = load_json(JSON_PATH)
         compute_stats(instructions)
 
     elif mode == "sql":
-        instructions = load_sql("../data/isa_x86.db")
+        instructions = load_sql(DB_PATH)
         compute_stats(instructions)
 
     else:

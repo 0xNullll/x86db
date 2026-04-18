@@ -1,6 +1,6 @@
 # x86db
 
-High-fidelity x86 instruction database with detailed encoding, flags, FPU semantics, and full exception modeling.
+High-fidelity x86 instruction database with normalized semantics, flag behavior, FPU modeling, and full exception coverage.
 
 ---
 
@@ -50,7 +50,7 @@ The following fields are primarily derived from Intel SDM Vol. 2:
 - Description
 - Flags (per-flag behavior)
 - Flags text
-- FPU semantics:
+- FPU semantics (fully extracted and normalized):
   - Read / Write
   - Stack delta
   - Constraints
@@ -69,8 +69,6 @@ Data derived from Intel XED datafiles.
 - https://github.com/intelxed/xed
 
 - **Snapshot Date:** 2026-02-03 (latest available at time of cloning)
-
-Includes:
 
 Includes:
 - CPL (privilege level metadata)
@@ -119,8 +117,15 @@ Significant transformations were applied to unify and enrich the dataset.
 This dataset includes:
 
 - Semantic instruction behavior (not just encoding)
-- Per-flag state tracking (modified, undefined, etc.)
-- FPU stack effects (read/write/delta)
+- Per-flag state tracking (modified, tested, undefined, not_affected)
+- Unified flag model (EFLAGS + FPU condition codes C0–C3)
+- Dual-layer flag representation:
+  - structured (`flags`)
+  - original textual (`flags_text`)
+- Split instruction descriptions:
+  - `description` (core semantics)
+  - `description_notes` (clarifications / edge cases)
+- FPU stack effects (read/write/delta) with full coverage
 - Fully grouped exception handling:
   - Protected mode
   - Real mode
@@ -273,6 +278,9 @@ uops.info
   and may not exactly match Intel Volume 2 naming
 * Minor inconsistencies between sources are expected and intentional
   as part of normalization
+* Flags are derived primarily from Intel SDM (Volume 2)
+  - When SDM flag text is available, it is used as the authoritative source
+  - When missing, flags are derived from Intel XED datafiles as a fallback
 
 ---
 
@@ -286,13 +294,8 @@ uops.info
 
 ## Known Issues
 
-- **FPU Description Field Missing**
-
-  The general FPU description field is not fully extracted in the current dataset.
-
-  This is due to a parsing limitation in this project and is **not an issue with the Intel SDM source**.
-
-  Other FPU-related fields (read/write, stack delta, constraints, and notes) are extracted correctly.
+- Minor parsing ambiguities may still occur in edge cases of Intel SDM text formatting
+- Microarchitectural data coverage depends on uops.info availability
 
 ---
 

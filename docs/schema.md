@@ -24,7 +24,11 @@ The dataset is derived from multiple sources and normalized into a unified schem
 - cpl: Required privilege level
 - op_en: Operand encoding type
 - tuple: Tuple type (or N/A)
-- description: Instruction description
+- description: Main semantic description of the instruction
+- description_notes: Additional notes, clarifications, or edge cases
+
+> `description_notes` is optional and contains supplementary details
+> that do not belong in the core semantic description.
 
 ---
 
@@ -39,20 +43,42 @@ The dataset is derived from multiple sources and normalized into a unified schem
 
 ### Flags
 - Dictionary mapping `flag -> status`
-- Includes standard FLAGS (CF, ZF, etc.)
-- FPU condition codes (C0–C3) may also appear
+- Provides normalized semantic behavior of each flag
+
+Where:
+- flag: One of:
+  - General flags: CF, PF, AF, ZF, SF, OF, DF, IF, TF, AC, VM, RF, NT, IOPL, VIP, VIF, ID
+  - FPU flags: C0, C1, C2, C3
+
+- status:
+  - modified       -> flag value is changed
+  - tested         -> flag is read/used for condition evaluation
+  - undefined      -> flag value becomes undefined
+  - not_affected   -> flag is preserved
+
+> Flags from both EFLAGS/RFLAGS and FPU condition codes are unified into a single structure.
 
 #### flags_text
-- Human-readable description of flag behavior
+- Original human-readable description from Intel documentation
+- Preserved for reference, traceability, and validation
+- Not normalized
 
----
+#### Flags Source Behavior (Important)
 
-### FPU (Optional)
-- read: Stack registers read
-- write: Stack registers written
-- delta: Stack change
-- constraint: Execution constraints
-- notes: Behavioral notes
+- When `flags_text` is present:
+  - Flags are derived from **Intel® SDM (Volume 2)** text
+  - `flags` represents a normalized interpretation of that text
+
+- When `flags_text` is missing or empty:
+  - Flags are **fallback-derived from Intel XED datafiles**
+  - In this case:
+    - `flags` still contains normalized flag behavior
+    - `flags_text` may be `"N/A"` or empty
+
+> SDM is preferred when available (higher semantic fidelity).  
+> XED is used as a fallback to avoid missing flag data.
+
+> XED-derived flags may differ slightly from SDM semantics in edge cases.
 
 ---
 
@@ -130,6 +156,22 @@ Examples:
 
 ---
 
+### FPU (x87 Instructions Only)
+
+Present for instructions belonging to the x87 floating-point unit.
+
+Typically corresponds to:
+- extension: "X87"
+
+Fields:
+- read: Stack registers read
+- write: Stack registers written
+- delta: Stack change
+- constraint: Execution constraints
+- notes: Behavioral notes
+
+> FPU behavior is normalized and fully populated.
+
 ---
 
 ## Notes
@@ -158,10 +200,25 @@ Examples:
 
 ---
 
-## Known Limitations
+### Notes on Flags Semantics
 
-- FPU description field may be missing due to parsing limitations  
-  (this is a parsing issue, not a source limitation)
+- Flags are normalized into a discrete set of behaviors:
+  - modified
+  - tested
+  - undefined
+  - not_affected
+
+- Multiple flags may be present per instruction
+- Absence of a flag means it is not referenced in the instruction semantics
+
+---
+
+### Normalization Notes
+
+- Textual descriptions (flags, operands, exceptions) are preserved,
+  but also normalized into structured data where possible
+- Structured fields should be preferred for programmatic use
+- Text fields exist for completeness and traceability
 
 ---
 
